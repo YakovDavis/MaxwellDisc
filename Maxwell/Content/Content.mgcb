@@ -13,6 +13,18 @@
 
 #---------------------------------- Content ---------------------------------#
 
+#begin ../../../../Documents/disc_maxwell.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:../../../../Documents/disc_maxwell.png;Textures/disc_maxwell.png
+
 #begin ../../../../Documents/lose.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -25,7 +37,7 @@
 /processorParam:TextureFormat=Color
 /build:../../../../Documents/lose.png;Textures/lose.png
 
-#begin ../../../../Documents/maxwell.png
+#begin ../../../../Documents/machine.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -35,7 +47,7 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:../../../../Documents/maxwell.png;Textures/maxwell.png
+/build:../../../../Documents/machine.png;Textures/machine.png
 
 #begin ../../../../Documents/reflector.png
 /importer:TextureImporter

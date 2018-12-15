@@ -31,17 +31,19 @@ namespace Maxwell.Desktop
 
         private string gamestate;
 
-        private Texture2D discTexture;
-        private Texture2D yana_sleeping1;
-        private Texture2D yana_sleeping2;
-        private Texture2D yasha_center;
-        private Texture2D yasha_left;
-        private Texture2D yasha_right;
-        private Texture2D reflector_default;
-        private Texture2D reflector_spark;
-        private Texture2D reflector_hit;
-        private Texture2D lose;
-        private Texture2D tohadze;
+        private Dictionary<string, Texture2D> textures;
+        private readonly string[] textureNames = {"disc_maxwell",
+                                                  "yana_sleeping1",
+                                                  "yana_sleeping2",
+                                                  "yasha_center",
+                                                  "yasha_left",
+                                                  "yasha_right",
+                                                  "reflector_default",
+                                                  "reflector_spark",
+                                                  "reflector_hit",
+                                                  "lose",
+                                                  "tohadze",
+                                                  "machine"};
 
         private Rectangle trigger;
         private List<Disc> discs;
@@ -88,6 +90,7 @@ namespace Maxwell.Desktop
             sparkFrames = 0;
             hitFrames = 20;
             trigger = new Rectangle(Convert.ToInt32(screenWidth / 2) - 32, screenHeight - 64, 64, 64);
+            textures = new Dictionary<string, Texture2D>();
 
             gamestate = "play";
 
@@ -102,19 +105,14 @@ namespace Maxwell.Desktop
         {
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
-            discTexture = Content.Load<Texture2D>("Textures/maxwell");
-            discOrigin = new Vector2(discTexture.Width / 2, discTexture.Height / 2);
-            reflector_default = Content.Load<Texture2D>("Textures/reflector_default");
-            reflector_spark = Content.Load<Texture2D>("Textures/reflector_spark");
-            reflector_hit = Content.Load<Texture2D>("Textures/reflector_hit");
-            reflectorOrigin = new Vector2(reflector_default.Width / 2, refl_radius / 1.67f );
-            yana_sleeping1 = Content.Load<Texture2D>("Textures/yana_sleeping1");
-            yana_sleeping2 = Content.Load<Texture2D>("Textures/yana_sleeping2");
-            yasha_center = Content.Load<Texture2D>("Textures/yasha_center");
-            yasha_left = Content.Load<Texture2D>("Textures/yasha_left");
-            yasha_right = Content.Load<Texture2D>("Textures/yasha_right");
-            lose = Content.Load<Texture2D>("Textures/lose");
-            tohadze = Content.Load<Texture2D>("Textures/tohadze");
+
+            foreach (string n in textureNames)
+            {
+                textures.Add(n, Content.Load<Texture2D>("Textures/" + n));
+            }
+
+            discOrigin = new Vector2(textures["disc_maxwell"].Width / 2, textures["disc_maxwell"].Height / 2);
+            reflectorOrigin = new Vector2(textures["reflector_default"].Width / 2, refl_radius / 1.67f );
         }
 
         /// <summary>
@@ -184,14 +182,14 @@ namespace Maxwell.Desktop
         {
             GraphicsDevice.Clear(Color.DarkCyan);
             spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null, null);
-            spriteBatch.Draw(tohadze, new Rectangle(0, 0, screenWidth, screenHeight), null, Color.White, 0f, new Vector2(0, 1), SpriteEffects.None, 0f);
+            //spriteBatch.Draw(textures["tohadze"], new Rectangle(0, 0, screenWidth, screenHeight), null, Color.White, 0f, new Vector2(0, 1), SpriteEffects.None, 0f);
             if (gamestate == "play")
             {
                 foreach (Disc d in discs)
-                    spriteBatch.Draw(discTexture, d.GetRenderRectangle(), null, d.GetCol(), d.GetRot(), discOrigin, SpriteEffects.None, 0f);
+                    spriteBatch.Draw(textures["disc_maxwell"], d.GetRenderRectangle(), null, d.GetCol(), d.GetRot(), discOrigin, SpriteEffects.None, 0f);
                 if (hitFrames < 20)
                 {
-                    spriteBatch.Draw(reflector_hit, new Rectangle(Convert.ToInt32(screenWidth / 2 + 8), Convert.ToInt32(screenHeight), 128, 128), null, reflector.GetCol(), reflector.GetRot(), reflectorOrigin, SpriteEffects.None, 0f);
+                    spriteBatch.Draw(textures["reflector_hit"], new Rectangle(Convert.ToInt32(screenWidth / 2 + 8), Convert.ToInt32(screenHeight), 128, 128), null, reflector.GetCol(), reflector.GetRot(), reflectorOrigin, SpriteEffects.None, 0f);
                     hitFrames++;
                 }
                 else
@@ -199,33 +197,36 @@ namespace Maxwell.Desktop
                     if (shouldSpark == true)
                     {
                         if ((sparkFrames < 5) || (sparkFrames > 10))
-                            spriteBatch.Draw(reflector_spark, new Rectangle(Convert.ToInt32(screenWidth / 2 + 8), Convert.ToInt32(screenHeight), 128, 128), null, reflector.GetCol(), reflector.GetRot(), reflectorOrigin, SpriteEffects.None, 0f);
+                            spriteBatch.Draw(textures["reflector_spark"], new Rectangle(Convert.ToInt32(screenWidth / 2 + 8), Convert.ToInt32(screenHeight), 128, 128), null, reflector.GetCol(), reflector.GetRot(), reflectorOrigin, SpriteEffects.None, 0f);
                         else
-                            spriteBatch.Draw(reflector_default, new Rectangle(Convert.ToInt32(screenWidth / 2 + 8), Convert.ToInt32(screenHeight), 128, 128), null, reflector.GetCol(), reflector.GetRot(), reflectorOrigin, SpriteEffects.None, 0f);
+                            spriteBatch.Draw(textures["reflector_default"], new Rectangle(Convert.ToInt32(screenWidth / 2 + 8), Convert.ToInt32(screenHeight), 128, 128), null, reflector.GetCol(), reflector.GetRot(), reflectorOrigin, SpriteEffects.None, 0f);
                         if (sparkFrames > 15)
                             shouldSpark = false;
                         sparkFrames++;
                     }
                     else
-                        spriteBatch.Draw(reflector_default, new Rectangle(Convert.ToInt32(screenWidth / 2 + 8), Convert.ToInt32(screenHeight), 128, 128), null, reflector.GetCol(), reflector.GetRot(), reflectorOrigin, SpriteEffects.None, 0f);
+                        spriteBatch.Draw(textures["reflector_default"], new Rectangle(Convert.ToInt32(screenWidth / 2 + 8), Convert.ToInt32(screenHeight), 128, 128), null, reflector.GetCol(), reflector.GetRot(), reflectorOrigin, SpriteEffects.None, 0f);
                 }
+                spriteBatch.Draw(textures["machine"], new Rectangle(Convert.ToInt32(screenWidth / 2 - 80), Convert.ToInt32(screenHeight - 90), 180, 180), null, Color.White, 0f, new Vector2(0, 1), SpriteEffects.None, 0f);
                 if ((reflector.GetRot() > -Math.PI / 6) && (reflector.GetRot() < Math.PI / 6))
-                    spriteBatch.Draw(yasha_center, new Rectangle(Convert.ToInt32(screenWidth / 2) - 64, screenHeight - 128, 128, 128), Color.White);
+                    spriteBatch.Draw(textures["yasha_center"], new Rectangle(Convert.ToInt32(screenWidth / 2) - 64, screenHeight - 122, 128, 128), Color.White);
                 if (reflector.GetRot() < -Math.PI / 6)
-                    spriteBatch.Draw(yasha_left, new Rectangle(Convert.ToInt32(screenWidth / 2) - 64, screenHeight - 128, 128, 128), Color.White);
+                    spriteBatch.Draw(textures["yasha_left"], new Rectangle(Convert.ToInt32(screenWidth / 2) - 64, screenHeight - 122, 128, 128), Color.White);
                 if (reflector.GetRot() > Math.PI / 6)
-                    spriteBatch.Draw(yasha_right, new Rectangle(Convert.ToInt32(screenWidth / 2) - 64, screenHeight - 128, 128, 128), Color.White);
+                    spriteBatch.Draw(textures["yasha_right"], new Rectangle(Convert.ToInt32(screenWidth / 2) - 64, screenHeight - 122, 128, 128), Color.White);
                 if (animationTimer < 1000)
-                    spriteBatch.Draw(yana_sleeping1, new Rectangle(Convert.ToInt32(screenWidth / 2) - 64, screenHeight - 128, 128, 128), null, Color.White, 0f, new Vector2(0, 0), SpriteEffects.None, 0f);
+                    spriteBatch.Draw(textures["yana_sleeping1"], new Rectangle(Convert.ToInt32(screenWidth / 2) - 64, screenHeight - 122, 128, 128), null, Color.White, 0f, new Vector2(0, 0), SpriteEffects.None, 0f);
                 if (animationTimer > 1000)
-                    spriteBatch.Draw(yana_sleeping2, new Rectangle(Convert.ToInt32(screenWidth / 2 - 64), screenHeight - 128, 128, 128), null, Color.White, 0f, new Vector2(0, 0), SpriteEffects.None, 0f);
+                    spriteBatch.Draw(textures["yana_sleeping2"], new Rectangle(Convert.ToInt32(screenWidth / 2 - 64), screenHeight - 122, 128, 128), null, Color.White, 0f, new Vector2(0, 0), SpriteEffects.None, 0f);
                 /*foreach (Rectangle r in reflector.GetColliders())
                     spriteBatch.Draw(discTexture, r, null, Color.White, 0, discOrigin, SpriteEffects.None, 0f);*/
             }
 
             if (gamestate == "lose")
-                spriteBatch.Draw(lose, new Rectangle(Convert.ToInt32(screenWidth / 2 - 64), Convert.ToInt32(screenHeight / 2 - 64), 128, 128), Color.White);
-
+            {
+                spriteBatch.Draw(textures["tohadze"], new Rectangle(0, 0, screenWidth, screenHeight), null, Color.White, 0f, new Vector2(0, 1), SpriteEffects.None, 0f);
+                spriteBatch.Draw(textures["lose"], new Rectangle(Convert.ToInt32(screenWidth / 2 - 64), Convert.ToInt32(screenHeight / 2 - 64), 128, 128), Color.White);
+            }
             spriteBatch.End();
 
             animationTimer += gameTime.ElapsedGameTime.Milliseconds;

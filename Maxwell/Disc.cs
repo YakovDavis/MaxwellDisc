@@ -17,6 +17,8 @@ namespace Maxwell
         private bool wasReversed;
         private Point bottomCenter;
 
+        private MiscTools mt;
+
         public Disc(Color c, Point pos, Point tar, Point bc)
         {
             position = pos.ToVector2();
@@ -27,16 +29,17 @@ namespace Maxwell
             velocity.Normalize();
             velocity *= speed;
             wasReversed = false;
+            mt = new MiscTools();
         }
 
         public Rectangle GetRenderRectangle()
         {
-            return new Rectangle(Convert.ToInt32(position.X), Convert.ToInt32(position.Y), 50, 50);
+            return new Rectangle(mt.Floor(position.X), mt.Floor(position.Y), 50, 50);
         }
 
         public Rectangle GetCollisionRectangle()
         {
-            return new Rectangle(Convert.ToInt32(position.X), Convert.ToInt32(position.Y), 24, 24);
+            return new Rectangle(mt.Floor(position.X), mt.Floor(position.Y), 24, 24);
         }
 
         public float GetRot()
