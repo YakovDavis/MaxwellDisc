@@ -29,6 +29,8 @@ namespace Maxwell.Desktop
 
         private float animationTimer;
 
+        private Dictionary<string, AnimationInfo> animationControl;
+
         private string gamestate;
 
         private Dictionary<string, Texture2D> textures;
@@ -44,6 +46,10 @@ namespace Maxwell.Desktop
                                                   "lose",
                                                   "tohadze",
                                                   "machine"};
+
+        private string currentYashaTexture;
+        private string currentYanaTexture;
+        private string currentReflectorTexture;
 
         private Rectangle trigger;
         private List<Disc> discs;
@@ -91,6 +97,13 @@ namespace Maxwell.Desktop
             hitFrames = 20;
             trigger = new Rectangle(Convert.ToInt32(screenWidth / 2) - 32, screenHeight - 64, 64, 64);
             textures = new Dictionary<string, Texture2D>();
+
+            animationControl = new Dictionary<string, AnimationInfo>();
+            animationControl.Add("yana", new AnimationInfo(0f, 0.25f, 2));
+
+            currentYashaTexture = "yasha_center";
+            currentYanaTexture = "yana_sleeping1";
+            currentReflectorTexture = "reflector_default";
 
             gamestate = "play";
 
@@ -169,6 +182,22 @@ namespace Maxwell.Desktop
                 }
             }
 
+            if ((reflector.GetRot() > -Math.PI / 6) && (reflector.GetRot() < Math.PI / 6))
+                currentYashaTexture = "yasha_center";
+            if (reflector.GetRot() < -Math.PI / 6)
+                currentYashaTexture = "yasha_left";
+            if (reflector.GetRot() > Math.PI / 6)
+                currentYashaTexture = "yasha_right";
+            switch (AnimationParser(gameTime, animationControl["yana"]))
+            {
+                case 0:
+                    currentYanaTexture = "yana_sleeping1";
+                    break;
+                case 1:
+                    currentYanaTexture = "yana_sleeping2";
+                    break;
+            }
+
             previousMousePosition = Mouse.GetState().Position;
 
             base.Update(gameTime);
@@ -208,16 +237,8 @@ namespace Maxwell.Desktop
                         spriteBatch.Draw(textures["reflector_default"], new Rectangle(Convert.ToInt32(screenWidth / 2 + 8), Convert.ToInt32(screenHeight), 128, 128), null, reflector.GetCol(), reflector.GetRot(), reflectorOrigin, SpriteEffects.None, 0f);
                 }
                 spriteBatch.Draw(textures["machine"], new Rectangle(Convert.ToInt32(screenWidth / 2 - 80), Convert.ToInt32(screenHeight - 90), 180, 180), null, Color.White, 0f, new Vector2(0, 1), SpriteEffects.None, 0f);
-                if ((reflector.GetRot() > -Math.PI / 6) && (reflector.GetRot() < Math.PI / 6))
-                    spriteBatch.Draw(textures["yasha_center"], new Rectangle(Convert.ToInt32(screenWidth / 2) - 64, screenHeight - 122, 128, 128), Color.White);
-                if (reflector.GetRot() < -Math.PI / 6)
-                    spriteBatch.Draw(textures["yasha_left"], new Rectangle(Convert.ToInt32(screenWidth / 2) - 64, screenHeight - 122, 128, 128), Color.White);
-                if (reflector.GetRot() > Math.PI / 6)
-                    spriteBatch.Draw(textures["yasha_right"], new Rectangle(Convert.ToInt32(screenWidth / 2) - 64, screenHeight - 122, 128, 128), Color.White);
-                if (animationTimer < 1000)
-                    spriteBatch.Draw(textures["yana_sleeping1"], new Rectangle(Convert.ToInt32(screenWidth / 2) - 64, screenHeight - 122, 128, 128), null, Color.White, 0f, new Vector2(0, 0), SpriteEffects.None, 0f);
-                if (animationTimer > 1000)
-                    spriteBatch.Draw(textures["yana_sleeping2"], new Rectangle(Convert.ToInt32(screenWidth / 2 - 64), screenHeight - 122, 128, 128), null, Color.White, 0f, new Vector2(0, 0), SpriteEffects.None, 0f);
+                spriteBatch.Draw(textures[currentYashaTexture], mt.BottomCenterRectangle(mt.Div2(screenWidth), screenHeight + 6, 128, 128), Color.White);
+                spriteBatch.Draw(textures[currentYanaTexture], mt.BottomCenterRectangle(mt.Div2(screenWidth), screenHeight + 6, 128, 128), null, Color.White, 0f, new Vector2(0, 0), SpriteEffects.None, 0f);
                 /*foreach (Rectangle r in reflector.GetColliders())
                     spriteBatch.Draw(discTexture, r, null, Color.White, 0, discOrigin, SpriteEffects.None, 0f);*/
             }
@@ -235,6 +256,26 @@ namespace Maxwell.Desktop
                 animationTimer -= 2000;
 
             base.Draw(gameTime);
+        }
+
+        private int AnimationParser(GameTime t, AnimationInfo a)
+        {
+            float time = (t.TotalGameTime.Milliseconds - a.start) / 1000;
+            int n = Convert.ToInt32(time / (1 / a.fps));
+            return Convert.ToInt32(n % a.frames);
+        }
+
+        private class AnimationInfo
+        {
+            public float start;
+            public float fps;
+            public int frames;
+            public AnimationInfo(float start1, float fps1, int frames1)
+            {
+                start = start1;
+                fps = fps1;
+                frames = frames1 - 1;
+            }
         }
     }
 }
