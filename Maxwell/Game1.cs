@@ -49,7 +49,7 @@ namespace Maxwell.Desktop
 
         private string currentYashaTexture;
         private string currentYanaTexture;
-        private string currentReflectorTexture;
+        //private string currentReflectorTexture;
 
         private Rectangle trigger;
         private List<Disc> discs;
