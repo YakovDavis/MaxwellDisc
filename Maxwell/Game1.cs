@@ -2,39 +2,52 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
 namespace Maxwell.Desktop
 {
-    /// <summary>
-    /// This is the main type for your game.
-    /// </summary>
     public class Game1 : Game
     {
-        private const float sensitivity = 0.015f;
         private const int refl_radius = 175;
+        private const int resolutionWidth = 1440;
+        private const int resolutionHeight = 900;
+        private const int targetResolutionHeight = 720;
+        private const int targetResolutionWidth = 1280;
+        private const float mouseSensitivity = 1.5f;
 
         private GraphicsDeviceManager graphics;
         private SpriteBatch spriteBatch;
+        private RenderTarget2D renderTarget;
 
         private int screenWidth;
         private int screenHeight;
         private int screenDiag;
 
-        private int timer;
-        private int delay;
+        private Cursor cursor;
+
+        private float delay;
+
+        private int score;
+        public float totalTime;
 
         private Random rnd;
-
-        private float animationTimer;
 
         private Dictionary<string, AnimationInfo> animationControl;
 
         private string gamestate;
+        private string musicstate;
+
+        private SpriteFont scoreFont;
+        private SpriteFont titleFont;
+
+        private Dictionary<string, SoundEffect> sounds;
+        private Dictionary<string, SoundEffectInstance> soundInstances;
 
         private Dictionary<string, Texture2D> textures;
         private readonly string[] textureNames = {"disc_maxwell",
+                                                  "cursor",
                                                   "yana_sleeping1",
                                                   "yana_sleeping2",
                                                   "yasha_center",
@@ -49,7 +62,9 @@ namespace Maxwell.Desktop
 
         private string currentYashaTexture;
         private string currentYanaTexture;
-        //private string currentReflectorTexture;
+        private string currentReflectorTexture;
+
+        private Dictionary<string, float> cooldowns;
 
         private Rectangle trigger;
         private List<Disc> discs;
@@ -61,208 +76,279 @@ namespace Maxwell.Desktop
         private Vector2 reflectorOrigin;
         private MiscTools mt;
 
-        private bool shouldSpark;
-        private int sparkFrames;
-        private int hitFrames;
-
         private Point previousMousePosition;
 
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
+            graphics.IsFullScreen = false;
+            graphics.PreferredBackBufferHeight = resolutionHeight;
+            graphics.PreferredBackBufferWidth = resolutionWidth;
+            graphics.PreferMultiSampling = true;
+
             Content.RootDirectory = "Content";
         }
 
-        /// <summary>
-        /// Allows the game to perform any initialization it needs to before starting to run.
-        /// This is where it can query for any required services and load any non-graphic
-        /// related content.  Calling base.Initialize will enumerate through any components
-        /// and initialize them as well.
-        /// </summary>
         protected override void Initialize()
         {
             rnd = new Random();
             mt = new MiscTools(rnd);
-            screenWidth = Window.ClientBounds.Width;
-            screenHeight = Window.ClientBounds.Height;
+
+            screenWidth = targetResolutionWidth;
+            screenHeight = targetResolutionHeight;
             screenDiag = Convert.ToInt32(Math.Sqrt(screenWidth * screenWidth + screenHeight * screenHeight));
+
             bottomCenter = new Point(screenWidth / 2, screenHeight);
+
             target = new Point(screenWidth / 2, screenHeight - 64);
+
+            cursor = new Cursor(0, 0, 8, 1f);
+
             discs = new List<Disc>();
-            reflector = new Reflector(bottomCenter, refl_radius, 64, Color.Aquamarine);
-            timer = 0;
-            delay = 100;
-            shouldSpark = false;
-            sparkFrames = 0;
-            hitFrames = 20;
+            reflector = new Reflector(bottomCenter, refl_radius, 96, Color.Aquamarine);
+
             trigger = new Rectangle(Convert.ToInt32(screenWidth / 2) - 32, screenHeight - 64, 64, 64);
             textures = new Dictionary<string, Texture2D>();
+            cooldowns = new Dictionary<string, float>();
+            sounds = new Dictionary<string, SoundEffect>();
+            soundInstances = new Dictionary<string, SoundEffectInstance>();
 
             animationControl = new Dictionary<string, AnimationInfo>();
             animationControl.Add("yana", new AnimationInfo(0f, 0.25f, 2));
 
-            currentYashaTexture = "yasha_center";
-            currentYanaTexture = "yana_sleeping1";
-            currentReflectorTexture = "reflector_default";
-
-            gamestate = "play";
-
             base.Initialize();
         }
 
-        /// <summary>
-        /// LoadContent will be called once per game and is the place to load
-        /// all of your content.
-        /// </summary>
         protected override void LoadContent()
         {
-            // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
+            renderTarget = new RenderTarget2D(GraphicsDevice, targetResolutionWidth, targetResolutionHeight);
 
             foreach (string n in textureNames)
             {
                 textures.Add(n, Content.Load<Texture2D>("Textures/" + n));
             }
 
-            discOrigin = new Vector2(textures["disc_maxwell"].Width / 2, textures["disc_maxwell"].Height / 2);
-            reflectorOrigin = new Vector2(textures["reflector_default"].Width / 2, refl_radius / 1.67f );
+            scoreFont = Content.Load<SpriteFont>("Fonts/score");
+            titleFont = Content.Load<SpriteFont>("Fonts/title");
+
+
+            sounds.Add("intro", Content.Load<SoundEffect>("Music/intro"));
+            sounds.Add("theme", Content.Load<SoundEffect>("Music/theme"));
+            sounds.Add("gameover", Content.Load<SoundEffect>("Music/gameover"));
+
+            soundInstances.Add("intro", sounds["intro"].CreateInstance());
+            soundInstances["intro"].Volume = 0.1f;
+            soundInstances.Add("theme", sounds["theme"].CreateInstance());
+            soundInstances["theme"].Volume = 0.1f;
+            soundInstances.Add("gameover", sounds["gameover"].CreateInstance());
+            soundInstances["gameover"].Volume = 0.1f;
+
+            discOrigin = new Vector2(25, 25);
+            reflectorOrigin = new Vector2(textures["reflector_default"].Width / 2, refl_radius / 1.67f);
+
+            GameStart();
         }
 
-        /// <summary>
-        /// UnloadContent will be called once per game and is the place to unload
-        /// game-specific content.
-        /// </summary>
         protected override void UnloadContent()
         {
-            // TODO: Unload any non ContentManager content here
+            sounds["intro"].Dispose();
+            sounds["theme"].Dispose();
+            soundInstances["intro"].Dispose();
+            soundInstances["theme"].Dispose();
         }
 
-        /// <summary>
-        /// Allows the game to run logic such as updating the world,
-        /// checking for collisions, gathering input, and playing audio.
-        /// </summary>
-        /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
+            Debug.WriteLine(reflector.GetRot());
+            if ((musicstate == "intro")&&(soundInstances["intro"].State == SoundState.Stopped))
+            {
+                musicstate = "theme";
+                soundInstances["theme"].IsLooped = true;
+                soundInstances["theme"].Play();
+            }
+            /*if ((musicstate == "theme") && (soundInstances["theme"].State == SoundState.Stopped))
+                soundInstances["theme"].Play();*/
+
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            reflector.Rotate((Mouse.GetState().Position.X - previousMousePosition.X) * sensitivity);
+            if (Keyboard.GetState().IsKeyDown(Keys.R))
+            {
+                GameStart();
+            }
+
+            if (cursor.AccuratePosition.X > screenWidth - 8)
+                cursor.AccuratePosition = new Vector2(screenWidth - 8, cursor.AccuratePosition.Y);
+            if (cursor.AccuratePosition.X < 0)
+                cursor.AccuratePosition = new Vector2(0, cursor.AccuratePosition.Y);
+            if (cursor.AccuratePosition.Y > screenHeight - 8)
+                cursor.AccuratePosition = new Vector2(cursor.AccuratePosition.X, screenHeight - 8);
+            if (cursor.AccuratePosition.Y < 0)
+                cursor.AccuratePosition = new Vector2(cursor.AccuratePosition.X, 0);
+            Vector2 displacement = Mouse.GetState().Position.ToVector2() - previousMousePosition.ToVector2();
+            cursor.Move((Mouse.GetState().Position.ToVector2() - previousMousePosition.ToVector2()) * mouseSensitivity);
+            Vector2 rVector = cursor.AccuratePosition - new Vector2(mt.Div2(screenWidth), screenHeight);
+            reflector.SetRotation(Convert.ToSingle(Math.Atan(rVector.X / Math.Abs(rVector.Y)) - 0.02f));
 
             if (gamestate == "play")
             {
                 foreach (Disc d in discs)
                 {
                     d.Update(gameTime);
-                    if ((reflector.Collides(d.GetCollisionRectangle())) && (!d.WasReversed()) && (d.DistanceToBottomCenter() > refl_radius + 40))
+                    if ((reflector.Collides(d.GetCollisionRectangle())) && (!d.WasReversed()) && (d.DistanceToBottomCenter() > refl_radius + 35))
                     {
                         d.Reverse();
-                        hitFrames = 0;
+                        score++;
+                        delay = 4 / (1 + score / 8) + 1;
+                        //Debug.WriteLine(delay);
+                        if (cooldowns.ContainsKey("hit"))
+                            cooldowns.Remove("hit");
+                        cooldowns.Add("hit", 0.0f);
                     }
                     if (trigger.Intersects(d.GetCollisionRectangle()))
+                    {
                         gamestate = "lose";
+                        StopSound();
+                        soundInstances["gameover"].Play();
+                    }
                 }
 
                 for (int i = 0; i < discs.Count; i++)
                     if (discs[i].DistanceToBottomCenter() > 2 * screenDiag)
                         discs.Remove(discs[i]);
 
-                if (timer < delay)
-                    timer++;
-                else
+                if (cooldowns["spawn"] >= delay)
                 {
-                    timer = 0;
-                    discs.Add(new Disc(mt.RandomColor(), mt.RandomSpawn(target, screenDiag), target, bottomCenter));
+                    cooldowns["spawn"] = 0.0f;
+                    discs.Add(new Disc("disc_maxwell", mt.RandomColor(), mt.RandomSpawn(target, screenDiag), target, bottomCenter));
                 }
 
-                if ((rnd.Next(200) == 55)&&(!shouldSpark))
+                if ((rnd.Next(200) == 55) && (!cooldowns.ContainsKey("spark")))
                 {
-                    shouldSpark = true;
-                    sparkFrames = 0;
+                    cooldowns.Add("spark", 0.0f);
+                    currentReflectorTexture = "reflector_spark";
                 }
+
+                if (cooldowns.ContainsKey("spark"))
+                {
+                    if ((cooldowns["spark"] < 0.2f) || (cooldowns["spark"] > 0.4f))
+                        currentReflectorTexture = "reflector_spark";
+                    else
+                        currentReflectorTexture = "reflector_default";
+                    if (cooldowns["spark"] > 0.6f)
+                    {
+                        currentReflectorTexture = "reflector_default";
+                        cooldowns.Remove("spark");
+                    }
+                }
+
+                if ((reflector.GetRot() > -Math.PI / 6) && (reflector.GetRot() < Math.PI / 6))
+                    currentYashaTexture = "yasha_center";
+                if (reflector.GetRot() < -Math.PI / 6)
+                    currentYashaTexture = "yasha_left";
+                if (reflector.GetRot() > Math.PI / 6)
+                    currentYashaTexture = "yasha_right";
+                if (cooldowns.ContainsKey("hit"))
+                {
+                    if (cooldowns["hit"] > 0.8f)
+                    {
+                        cooldowns.Remove("hit");
+                        currentReflectorTexture = "reflector_default";
+                    }
+                    else
+                        currentReflectorTexture = "reflector_hit";
+                }
+                switch (AnimationParser(gameTime, animationControl["yana"]))
+                {
+                    case 0:
+                        currentYanaTexture = "yana_sleeping1";
+                        break;
+                    case 1:
+                        currentYanaTexture = "yana_sleeping2";
+                        break;
+                }
+                totalTime += Convert.ToSingle(gameTime.ElapsedGameTime.TotalSeconds);
             }
 
-            if ((reflector.GetRot() > -Math.PI / 6) && (reflector.GetRot() < Math.PI / 6))
-                currentYashaTexture = "yasha_center";
-            if (reflector.GetRot() < -Math.PI / 6)
-                currentYashaTexture = "yasha_left";
-            if (reflector.GetRot() > Math.PI / 6)
-                currentYashaTexture = "yasha_right";
-            switch (AnimationParser(gameTime, animationControl["yana"]))
-            {
-                case 0:
-                    currentYanaTexture = "yana_sleeping1";
-                    break;
-                case 1:
-                    currentYanaTexture = "yana_sleeping2";
-                    break;
-            }
-
+            Mouse.SetPosition(mt.Div2(screenWidth), mt.Div2(screenHeight));
             previousMousePosition = Mouse.GetState().Position;
+
+            List<string> temp = new List<string>(cooldowns.Keys);
+
+            foreach (string k in temp)
+                cooldowns[k] += Convert.ToSingle(gameTime.ElapsedGameTime.TotalSeconds);
 
             base.Update(gameTime);
         }
 
-        /// <summary>
-        /// This is called when the game should draw itself.
-        /// </summary>
-        /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.DarkCyan);
-            spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null, null);
-            //spriteBatch.Draw(textures["tohadze"], new Rectangle(0, 0, screenWidth, screenHeight), null, Color.White, 0f, new Vector2(0, 1), SpriteEffects.None, 0f);
+            GraphicsDevice.SetRenderTarget(renderTarget);
+            GraphicsDevice.Clear(Color.DarkCyan);
+            spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, new RasterizerState { MultiSampleAntiAlias = true }, null, null);
             if (gamestate == "play")
             {
                 foreach (Disc d in discs)
                     spriteBatch.Draw(textures["disc_maxwell"], d.GetRenderRectangle(), null, d.GetCol(), d.GetRot(), discOrigin, SpriteEffects.None, 0f);
-                if (hitFrames < 20)
-                {
-                    spriteBatch.Draw(textures["reflector_hit"], new Rectangle(Convert.ToInt32(screenWidth / 2 + 8), Convert.ToInt32(screenHeight), 128, 128), null, reflector.GetCol(), reflector.GetRot(), reflectorOrigin, SpriteEffects.None, 0f);
-                    hitFrames++;
-                }
-                else
-                {
-                    if (shouldSpark == true)
-                    {
-                        if ((sparkFrames < 5) || (sparkFrames > 10))
-                            spriteBatch.Draw(textures["reflector_spark"], new Rectangle(Convert.ToInt32(screenWidth / 2 + 8), Convert.ToInt32(screenHeight), 128, 128), null, reflector.GetCol(), reflector.GetRot(), reflectorOrigin, SpriteEffects.None, 0f);
-                        else
-                            spriteBatch.Draw(textures["reflector_default"], new Rectangle(Convert.ToInt32(screenWidth / 2 + 8), Convert.ToInt32(screenHeight), 128, 128), null, reflector.GetCol(), reflector.GetRot(), reflectorOrigin, SpriteEffects.None, 0f);
-                        if (sparkFrames > 15)
-                            shouldSpark = false;
-                        sparkFrames++;
-                    }
-                    else
-                        spriteBatch.Draw(textures["reflector_default"], new Rectangle(Convert.ToInt32(screenWidth / 2 + 8), Convert.ToInt32(screenHeight), 128, 128), null, reflector.GetCol(), reflector.GetRot(), reflectorOrigin, SpriteEffects.None, 0f);
-                }
-                spriteBatch.Draw(textures["machine"], new Rectangle(Convert.ToInt32(screenWidth / 2 - 80), Convert.ToInt32(screenHeight - 90), 180, 180), null, Color.White, 0f, new Vector2(0, 1), SpriteEffects.None, 0f);
-                spriteBatch.Draw(textures[currentYashaTexture], mt.BottomCenterRectangle(mt.Div2(screenWidth), screenHeight + 6, 128, 128), Color.White);
-                spriteBatch.Draw(textures[currentYanaTexture], mt.BottomCenterRectangle(mt.Div2(screenWidth), screenHeight + 6, 128, 128), null, Color.White, 0f, new Vector2(0, 0), SpriteEffects.None, 0f);
+                spriteBatch.Draw(textures[currentReflectorTexture], new Rectangle(Convert.ToInt32(screenWidth / 2 + 8), Convert.ToInt32(screenHeight), 192, 192), null, reflector.GetCol(), reflector.GetRot(), reflectorOrigin, SpriteEffects.None, 0f);
+                spriteBatch.Draw(textures["machine"], new Rectangle(Convert.ToInt32(screenWidth / 2 - 120), Convert.ToInt32(screenHeight - 135), 270, 270), null, Color.White, 0f, new Vector2(0, 1), SpriteEffects.None, 0f);
+                spriteBatch.Draw(textures[currentYashaTexture], mt.BottomCenterRectangle(mt.Div2(screenWidth), screenHeight + 6, 192, 192), Color.White);
+                spriteBatch.Draw(textures[currentYanaTexture], mt.BottomCenterRectangle(mt.Div2(screenWidth), screenHeight + 6, 192, 192), null, Color.White, 0f, new Vector2(0, 0), SpriteEffects.None, 0f);
+                spriteBatch.DrawString(scoreFont, $"Score: {score}", new Vector2(20, 0), Color.Black);
+                spriteBatch.DrawString(scoreFont, $"Time: {totalTime.ToString("n2")}", new Vector2(screenWidth - 250, 0), Color.Black);
                 /*foreach (Rectangle r in reflector.GetColliders())
-                    spriteBatch.Draw(discTexture, r, null, Color.White, 0, discOrigin, SpriteEffects.None, 0f);*/
+                    spriteBatch.Draw(textures["disc_maxwell"], r, null, Color.White, 0, discOrigin, SpriteEffects.None, 0f);*/
             }
 
             if (gamestate == "lose")
             {
                 spriteBatch.Draw(textures["tohadze"], new Rectangle(0, 0, screenWidth, screenHeight), null, Color.White, 0f, new Vector2(0, 1), SpriteEffects.None, 0f);
-                spriteBatch.Draw(textures["lose"], new Rectangle(Convert.ToInt32(screenWidth / 2 - 64), Convert.ToInt32(screenHeight / 2 - 64), 128, 128), Color.White);
+                spriteBatch.DrawString(titleFont, $"Game over!", new Vector2(mt.Div2(screenWidth) - 100, mt.Div2(screenHeight)), Color.Black);
+                spriteBatch.DrawString(scoreFont, $"You survived for {totalTime.ToString("n2")} seconds\nAnd scored {score} points\nPress R to restart", new Vector2(mt.Div2(screenWidth) - 200, mt.Div2(screenHeight) + 50), Color.Black);
+                //spriteBatch.Draw(textures["lose"], new Rectangle(Convert.ToInt32(screenWidth / 2 - 64), Convert.ToInt32(screenHeight / 2 - 64), 128, 128), Color.White);
             }
+            spriteBatch.Draw(textures["cursor"], cursor.GetRenderRectangle(), null, Color.White, 0f, new Vector2(0, 1), SpriteEffects.None, 0f);
+            spriteBatch.DrawString(scoreFont, $"Pre-Alpha", new Vector2(screenWidth - 200, screenHeight - 30), Color.DarkGray);
             spriteBatch.End();
 
-            animationTimer += gameTime.ElapsedGameTime.Milliseconds;
+            GraphicsDevice.SetRenderTarget(null);
 
-            if (animationTimer > 2000)
-                animationTimer -= 2000;
+            spriteBatch.Begin(); //SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null, null);
+            spriteBatch.Draw(renderTarget, new Rectangle(0, 0, resolutionWidth, resolutionHeight), Color.White);
+            spriteBatch.End();
 
             base.Draw(gameTime);
         }
 
+        private void GameStart()
+        {
+            delay = 5.0f;
+            if (cooldowns.ContainsKey("spawn"))
+                cooldowns.Remove("spawn");
+            cooldowns.Add("spawn", 0.0f);
+            currentYashaTexture = "yasha_center";
+            currentYanaTexture = "yana_sleeping1";
+            currentReflectorTexture = "reflector_default";
+            gamestate = "play";
+            musicstate = "intro";
+            StopSound();
+            soundInstances["intro"].Play();
+            score = 0;
+            totalTime = 0;
+            discs.Clear();
+        }
+
+        private void StopSound()
+        {
+            foreach (SoundEffectInstance s in soundInstances.Values)
+                s.Stop();
+        }
+
         private int AnimationParser(GameTime t, AnimationInfo a)
         {
-            float time = (t.TotalGameTime.Milliseconds - a.start) / 1000;
-            int n = Convert.ToInt32(time / (1 / a.fps));
-            return Convert.ToInt32(n % a.frames);
+            return Convert.ToInt32(Convert.ToSingle(t.TotalGameTime.TotalSeconds) * a.fps % a.frames);
         }
 
         private class AnimationInfo

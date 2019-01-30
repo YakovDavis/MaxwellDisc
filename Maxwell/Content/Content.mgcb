@@ -13,6 +13,18 @@
 
 #---------------------------------- Content ---------------------------------#
 
+#begin ../../../../Documents/cursor.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:../../../../Documents/cursor.png;Textures/cursor.png
+
 #begin ../../../../Documents/disc_maxwell.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -24,6 +36,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:../../../../Documents/disc_maxwell.png;Textures/disc_maxwell.png
+
+#begin ../../../../Documents/gameover.mp3
+/importer:Mp3Importer
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:../../../../Documents/gameover.mp3;Music/gameover.mp3
+
+#begin ../../../../Documents/intro.mp3
+/importer:Mp3Importer
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:../../../../Documents/intro.mp3;Music/intro.mp3
 
 #begin ../../../../Documents/lose.png
 /importer:TextureImporter
@@ -97,6 +121,12 @@
 /processorParam:TextureFormat=Color
 /build:../../../../Documents/reflector_spark.png;Textures/reflector_spark.png
 
+#begin ../../../../Documents/theme.mp3
+/importer:Mp3Importer
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:../../../../Documents/theme.mp3;Music/theme.mp3
+
 #begin ../../../../Documents/yana_sleeping1.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -168,4 +198,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:../../../../Downloads/tohadze.jpg;Textures/tohadze.jpg
+
+#begin Fonts/score.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:Fonts/score.spritefont
+
+#begin Fonts/title_font.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:Fonts/title_font.spritefont;Fonts/title.spritefont
 

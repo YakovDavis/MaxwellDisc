@@ -1,11 +1,8 @@
 ﻿using System;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
-
 namespace Maxwell
 {
-    public class Disc
+    public class Disc : IEnemy
     {
         private const float aSpeed = 0.005f;
         private const float speed = 0.1f;
@@ -16,14 +13,16 @@ namespace Maxwell
         private Point target;
         private bool wasReversed;
         private Point bottomCenter;
+        private string texture;
 
         private MiscTools mt;
 
-        public Disc(Color c, Point pos, Point tar, Point bc)
+        public Disc(string tex, Color c, Point pos, Point tar, Point bc)
         {
             position = pos.ToVector2();
             col = c;
             target = tar;
+            texture = tex;
             bottomCenter = bc;
             velocity = new Vector2(target.X - pos.X, target.Y - pos.Y);
             velocity.Normalize();
@@ -34,12 +33,12 @@ namespace Maxwell
 
         public Rectangle GetRenderRectangle()
         {
-            return new Rectangle(mt.Floor(position.X), mt.Floor(position.Y), 50, 50);
+            return new Rectangle(mt.Floor(position.X), mt.Floor(position.Y), 96, 96);
         }
 
         public Rectangle GetCollisionRectangle()
         {
-            return new Rectangle(mt.Floor(position.X), mt.Floor(position.Y), 24, 24);
+            return new Rectangle(mt.Floor(position.X), mt.Floor(position.Y), 36, 36);
         }
 
         public float GetRot()
@@ -50,6 +49,11 @@ namespace Maxwell
         public Color GetCol()
         {
             return col;
+        }
+
+        public string GetTexture()
+        {
+            return texture;
         }
 
         public float DistanceToBottomCenter()

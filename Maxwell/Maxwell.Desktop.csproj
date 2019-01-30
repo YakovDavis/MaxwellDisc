@@ -29,8 +29,6 @@
     <OutputPath>bin\$(MonoGamePlatform)\$(Platform)\$(Configuration)\</OutputPath>
     <DefineConstants>TRACE;LINUX</DefineConstants>
     <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <Prefer32Bit>false</Prefer32Bit>
     <WarningLevel>4</WarningLevel>
@@ -48,6 +46,10 @@
     <Compile Include="MiscTools.cs" />
     <Compile Include="Disc.cs" />
     <Compile Include="Reflector.cs" />
+    <Compile Include="IEnemy.cs" />
+    <Compile Include="IPowerup.cs" />
+    <Compile Include="Cursor.cs" />
+    <Compile Include="PaperShot.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="MonoGame.Framework">

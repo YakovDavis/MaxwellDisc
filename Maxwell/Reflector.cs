@@ -1,8 +1,6 @@
 ﻿using System;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
-using System.Diagnostics;
+
 namespace Maxwell
 {
     public class Reflector
@@ -28,7 +26,7 @@ namespace Maxwell
             int wtemp = Convert.ToInt32(width / 8);
             for (int i = 0; i < 4; i++)
             {
-                collVectors[i] = new Vector2(-24 + i * 16 , r - i*i + 3 * i + 28);
+                collVectors[i] = new Vector2(-36 + i * 24 , r - i*i + 3 * i + 130);
                 collVectors[i] = Vector2.Transform(collVectors[i], Matrix.CreateRotationZ(rot));
             }
             for (int i = 0; i < 4; i++)
@@ -63,13 +61,13 @@ namespace Maxwell
             return flag;
         }
 
-        public void Rotate(float rad)
+        public void SetRotation(float rad)
         {
             float prev = rot;
-            rot += rad;
+            rot = rad;
             if (rot > Convert.ToSingle(Math.PI / 2))
                 rot = Convert.ToSingle(Math.PI / 2);
-            if (rot < -Convert.ToSingle(Math.PI / 2))
+            if (rot < -Convert.ToSingle(Math.PI / 2) + 0.05f)
                 rot = -Convert.ToSingle(Math.PI / 2);
             position = Vector2.Transform(position, Matrix.CreateRotationZ(rot - prev));
             for (int i = 0; i < colliders.Length; i++)
