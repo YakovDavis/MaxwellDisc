@@ -40,9 +40,9 @@ namespace Maxwell
 
         public bool IsOnButton(int x, int y)
         {
-            if ((x > x1) && (x < x2) && (y > y1) && (y < y2))
+            if ((x > box.Left) && (x < box.Right) && (y > box.Top) && (y < box.Bottom))
                 return true;
-            return false
+            return false;
         }
     }
 }
