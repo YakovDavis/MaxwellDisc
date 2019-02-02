@@ -11,8 +11,8 @@ namespace Maxwell.Desktop
     public class Game1 : Game
     {
         private const int refl_radius = 175;
-        private const int resolutionWidth = 1440;
-        private const int resolutionHeight = 900;
+        private const int resolutionWidth = 900;
+        private const int resolutionHeight = 480;
         private const int targetResolutionHeight = 720;
         private const int targetResolutionWidth = 1280;
         private const float mouseSensitivity = 1.5f;
@@ -36,7 +36,8 @@ namespace Maxwell.Desktop
 
         private Dictionary<string, AnimationInfo> animationControl;
 
-        private string gamestate;
+        private GameState gamestate;
+
         private string musicstate;
 
         private SpriteFont scoreFont;
@@ -160,7 +161,6 @@ namespace Maxwell.Desktop
 
         protected override void Update(GameTime gameTime)
         {
-            Debug.WriteLine(reflector.GetRot());
             if ((musicstate == "intro")&&(soundInstances["intro"].State == SoundState.Stopped))
             {
                 musicstate = "theme";
@@ -191,7 +191,7 @@ namespace Maxwell.Desktop
             Vector2 rVector = cursor.AccuratePosition - new Vector2(mt.Div2(screenWidth), screenHeight);
             reflector.SetRotation(Convert.ToSingle(Math.Atan(rVector.X / Math.Abs(rVector.Y)) - 0.02f));
 
-            if (gamestate == "play")
+            if (gamestate == GameState.Playing)
             {
                 foreach (Disc d in discs)
                 {
@@ -208,7 +208,7 @@ namespace Maxwell.Desktop
                     }
                     if (trigger.Intersects(d.GetCollisionRectangle()))
                     {
-                        gamestate = "lose";
+                        gamestate = GameState.Lost;
                         StopSound();
                         soundInstances["gameover"].Play();
                     }
@@ -288,36 +288,42 @@ namespace Maxwell.Desktop
             GraphicsDevice.SetRenderTarget(renderTarget);
             GraphicsDevice.Clear(Color.DarkCyan);
             spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, new RasterizerState { MultiSampleAntiAlias = true }, null, null);
-            if (gamestate == "play")
+            switch (gamestate)
             {
-                foreach (Disc d in discs)
-                    spriteBatch.Draw(textures["disc_maxwell"], d.GetRenderRectangle(), null, d.GetCol(), d.GetRot(), discOrigin, SpriteEffects.None, 0f);
-                spriteBatch.Draw(textures[currentReflectorTexture], new Rectangle(Convert.ToInt32(screenWidth / 2 + 8), Convert.ToInt32(screenHeight), 192, 192), null, reflector.GetCol(), reflector.GetRot(), reflectorOrigin, SpriteEffects.None, 0f);
-                spriteBatch.Draw(textures["machine"], new Rectangle(Convert.ToInt32(screenWidth / 2 - 120), Convert.ToInt32(screenHeight - 135), 270, 270), null, Color.White, 0f, new Vector2(0, 1), SpriteEffects.None, 0f);
-                spriteBatch.Draw(textures[currentYashaTexture], mt.BottomCenterRectangle(mt.Div2(screenWidth), screenHeight + 6, 192, 192), Color.White);
-                spriteBatch.Draw(textures[currentYanaTexture], mt.BottomCenterRectangle(mt.Div2(screenWidth), screenHeight + 6, 192, 192), null, Color.White, 0f, new Vector2(0, 0), SpriteEffects.None, 0f);
-                spriteBatch.DrawString(scoreFont, $"Score: {score}", new Vector2(20, 0), Color.Black);
-                spriteBatch.DrawString(scoreFont, $"Time: {totalTime.ToString("n2")}", new Vector2(screenWidth - 250, 0), Color.Black);
-                /*foreach (Rectangle r in reflector.GetColliders())
-                    spriteBatch.Draw(textures["disc_maxwell"], r, null, Color.White, 0, discOrigin, SpriteEffects.None, 0f);*/
+                case GameState.Playing:
+                    {
+                        foreach (Disc d in discs)
+                            spriteBatch.Draw(textures["disc_maxwell"], d.GetRenderRectangle(), null, d.GetCol(), d.GetRot(), discOrigin, SpriteEffects.None, 0f);
+                        spriteBatch.Draw(textures[currentReflectorTexture], new Rectangle(Convert.ToInt32(screenWidth / 2 + 8), Convert.ToInt32(screenHeight), 192, 192), null, reflector.GetCol(), reflector.GetRot(), reflectorOrigin, SpriteEffects.None, 0f);
+                        spriteBatch.Draw(textures["machine"], new Rectangle(Convert.ToInt32(screenWidth / 2 - 120), Convert.ToInt32(screenHeight - 135), 270, 270), null, Color.White, 0f, new Vector2(0, 1), SpriteEffects.None, 0f);
+                        spriteBatch.Draw(textures[currentYashaTexture], mt.BottomCenterRectangle(mt.Div2(screenWidth), screenHeight + 6, 192, 192), Color.White);
+                        spriteBatch.Draw(textures[currentYanaTexture], mt.BottomCenterRectangle(mt.Div2(screenWidth), screenHeight + 6, 192, 192), null, Color.White, 0f, new Vector2(0, 0), SpriteEffects.None, 0f);
+                        spriteBatch.DrawString(scoreFont, $"Score: {score}", new Vector2(20, 0), Color.Black);
+                        spriteBatch.DrawString(scoreFont, $"Time: {totalTime.ToString("n2")}", new Vector2(screenWidth - 250, 0), Color.Black);
+                        /*foreach (Rectangle r in reflector.GetColliders())
+                            spriteBatch.Draw(textures["disc_maxwell"], r, null, Color.White, 0, discOrigin, SpriteEffects.None, 0f);*/
+                        spriteBatch.Draw(textures["cursor"], cursor.GetRenderRectangle(), null, Color.White, 0f, new Vector2(0, 1), SpriteEffects.None, 0f);
+                        break;
+                    }
+                case GameState.Lost:
+                    {
+                        spriteBatch.Draw(textures["tohadze"], new Rectangle(0, 0, screenWidth, screenHeight), null, Color.White, 0f, new Vector2(0, 1), SpriteEffects.None, 0f);
+                        spriteBatch.DrawString(titleFont, $"Game over!", new Vector2(mt.Div2(screenWidth) - 100, mt.Div2(screenHeight)), Color.Black);
+                        spriteBatch.DrawString(scoreFont, $"You survived for {totalTime.ToString("n2")} seconds\nAnd scored {score} points\nPress R to restart", new Vector2(mt.Div2(screenWidth) - 200, mt.Div2(screenHeight) + 50), Color.Black);
+                        //spriteBatch.Draw(textures["lose"], new Rectangle(Convert.ToInt32(screenWidth / 2 - 64), Convert.ToInt32(screenHeight / 2 - 64), 128, 128), Color.White);
+                        break;
+                    }
             }
-
-            if (gamestate == "lose")
-            {
-                spriteBatch.Draw(textures["tohadze"], new Rectangle(0, 0, screenWidth, screenHeight), null, Color.White, 0f, new Vector2(0, 1), SpriteEffects.None, 0f);
-                spriteBatch.DrawString(titleFont, $"Game over!", new Vector2(mt.Div2(screenWidth) - 100, mt.Div2(screenHeight)), Color.Black);
-                spriteBatch.DrawString(scoreFont, $"You survived for {totalTime.ToString("n2")} seconds\nAnd scored {score} points\nPress R to restart", new Vector2(mt.Div2(screenWidth) - 200, mt.Div2(screenHeight) + 50), Color.Black);
-                //spriteBatch.Draw(textures["lose"], new Rectangle(Convert.ToInt32(screenWidth / 2 - 64), Convert.ToInt32(screenHeight / 2 - 64), 128, 128), Color.White);
-            }
-            spriteBatch.Draw(textures["cursor"], cursor.GetRenderRectangle(), null, Color.White, 0f, new Vector2(0, 1), SpriteEffects.None, 0f);
             spriteBatch.DrawString(scoreFont, $"Pre-Alpha", new Vector2(screenWidth - 200, screenHeight - 30), Color.DarkGray);
             spriteBatch.End();
 
             GraphicsDevice.SetRenderTarget(null);
 
             spriteBatch.Begin(); //SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null, null);
-            spriteBatch.Draw(renderTarget, new Rectangle(0, 0, resolutionWidth, resolutionHeight), Color.White);
+            spriteBatch.Draw(renderTarget, new Rectangle(Convert.ToInt32((resolutionWidth - resolutionHeight * ((float)targetResolutionWidth / targetResolutionHeight)) / 2), 0, Convert.ToInt32(resolutionHeight * ((float)targetResolutionWidth / targetResolutionHeight)), resolutionHeight), Color.White);
             spriteBatch.End();
+
+            Debug.WriteLine(resolutionHeight * ((float)targetResolutionWidth / targetResolutionHeight));
 
             base.Draw(gameTime);
         }
@@ -331,7 +337,7 @@ namespace Maxwell.Desktop
             currentYashaTexture = "yasha_center";
             currentYanaTexture = "yana_sleeping1";
             currentReflectorTexture = "reflector_default";
-            gamestate = "play";
+            gamestate = GameState.Playing;
             musicstate = "intro";
             StopSound();
             soundInstances["intro"].Play();
@@ -349,19 +355,6 @@ namespace Maxwell.Desktop
         private int AnimationParser(GameTime t, AnimationInfo a)
         {
             return Convert.ToInt32(Convert.ToSingle(t.TotalGameTime.TotalSeconds) * a.fps % a.frames);
-        }
-
-        private class AnimationInfo
-        {
-            public float start;
-            public float fps;
-            public int frames;
-            public AnimationInfo(float start1, float fps1, int frames1)
-            {
-                start = start1;
-                fps = fps1;
-                frames = frames1 - 1;
-            }
         }
     }
 }
